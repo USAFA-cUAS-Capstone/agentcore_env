@@ -1,0 +1,30 @@
+Activate virtual environment on Ubuntu
+
+source ~/dronekit/bin/activate
+cd C:\Apps\Anaconda3\envs\Unity_ZMQ\Lib\site-packages\MAVProxy
+
+
+
+Start SITL transmitting on 127.0.0.1:5760
+
+dronekit-sitl copter --home=39.01866,-104.89356,0,353 --model=copter
+
+
+
+Start MAVPROXY on tcp:127.0.0.1:14550 pointing to a SITL on tcp:127.0.0.1:5760
+
+mavproxy.py --master=tcp:127.0.0.1:5760 --sitl=tcp:127.0.0.1:5501 --out udp:127.0.0.1:14550 --out udp:127.0.0.1:14551 --out udp:127.0.0.1:14552
+
+mavproxy.exe --master=tcp:127.0.0.1:5760 --sitl=tcp:127.0.0.1:5501 --out udp:127.0.0.1:14550 --out udp:127.0.0.1:14551 --out udp:127.0.0.1:14552
+
+mavproxy.exe --master=127.0.0.1:5760 --sitl=127.0.0.1:5501 --out 127.0.0.1:14550 --out 127.0.0.1:14551 --out 127.0.0.1:14552
+
+mavproxy.py --master tcp:127.0.0.1:5760 --sitl 127.0.0.1:5501 --out 127.0.0.1:14550 --out 127.0.0.1:14551 --out 127.0.0.1:14552
+
+--master is used to point MAVProxy to each instance of a running simulator while --out sends unique streams of the merged messages to a UDP port that can be used by any system such as Mission Planner
+
+C:\"Program Files (x86)\MAVProxy"\mavproxy.exe --master=tcp:127.0.0.1:5760 --master=tcp:127.0.0.1:5770 --out=udp:127.0.0.1:14550 --map
+
+C:\"Program Files (x86)\MAVProxy"\mavproxy.exe --master=tcp:127.0.0.1:5760 --out=udp:127.0.0.1:14550 --out=udp:127.0.0.1:14551 --streamrate=-1 --console
+
+C:\"Program Files (x86)\MAVProxy"\mavproxy.exe --master=tcp:127.0.0.1:5760 --master=tcp:127.0.0.1:5770 --out=udp:127.0.0.1:14550 --out=udp:127.0.0.1:14551
