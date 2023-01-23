@@ -133,7 +133,60 @@ class FltCtlCommander:
             lon,
             alt,
             0, 0, 0, 0, 0, 0, 1.57, 0.5)
-        )                
+        )
+        
+    def send_move_at_velocity(self, speed=(2.0, 0, 0)):
+
+        # https://ardupilot.org/dev/docs/mavlink-rover-commands.html
+
+        # Send the SET_POSITION_TARGET_LOCAL_NED command
+        self._mav_connection.mav.set_position_target_local_ned_send(
+            0, # system time in milliseconds
+            self._mav_connection.target_system, self._mav_connection.target_component,
+            mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED,
+            3559,  # mask specifying which dimensions should be ignored
+            0, 0, 0,  # x, y, z positions (not used)
+            speed[0], speed[1], speed[2],  # x, y, z velocity
+            0, 0, 0,  # x, y, z acceleration (not used)
+            0, 0)  # yaw, yaw_rate (not used)
+
+
+    ### Relenquishes all control commands to the handheld controller
+    def rc_override_relenquish_to_handheld(self):
+
+        values = [0]*8
+        self._mav_connection.mav.rc_channels_override_send(
+            self._mav_connection.target_system, self._mav_connection.target_component,
+            *values
+        )
+
+    def set_rc_channel_pwm(self, channel_id, pwm=1500):
+
+        ''' Set RC channel pwn value
+            Arguments:
+                - channel_id (int): Servo Channel ID
+                - pwm(int, optional): Channel pwm 0%-100% values are 1000-2000
+                -- best practice is to set the pwm values between 1100-1900
+                -- value of 0 means hand it back to handheld controller
+                -- value of UINT16_MAX (65535) means ignore the channel
+                
+        '''
+
+        # check for valid input channel
+        if channel_id < 1 or channel_id > 18:
+            print("Channel does not exist")
+            return
+
+        # Mavlink 2 supports up to 18 channels:
+        # https://mavlink.io/en/messages/common.html#RC_CHANNELS_OVERRIDE
+        # Initialize all the channels to UINT16_MAX which tells mavlink the channel is unused
+        rc_channel_values = [65535 for _ in range(18)]
+        rc_channel_values[channel_id - 1] = pwm
+        self._mav_connection.mav.rc_channels_override_send(
+            self._mav_connection.target_system, self._mav_connection.target_component,
+            *rc_channel_values
+        )
+    
 
     def send_sequenced_commands(self, command_list):
 
