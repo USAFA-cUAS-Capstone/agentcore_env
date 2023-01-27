@@ -10,10 +10,11 @@ def main():
 
     # Start connection listening to a TCP (direct to SITL) or UDP (MAVProxy) port
     ### Connection when the MavProxy is on another computer (The IP and port may vary)
-    # mav_connection = mavutil.mavlink_connection('udpin:192.168.1.76:14551')
+    # TODO: Find IP/port for GS 1 on test network
+    mav_connection = mavutil.mavlink_connection('udpin:192.168.1.76:14551')
 
     ### Connection when the MavProxy is on this computer
-    mav_connection = mavutil.mavlink_connection('udpin:127.0.0.1:14551')
+    # mav_connection = mavutil.mavlink_connection('udpin:127.0.0.1:14551')
 
     ### Connection When there is no MavProxy and you are connecting to the SITL directly (no Mission Planner)
     print("Trying to connect")
