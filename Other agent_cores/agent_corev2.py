@@ -1,5 +1,6 @@
 import os
 import time
+import random
 
 os.environ['MAVLINK20'] = '1'
 from pymavlink import mavutil
@@ -39,8 +40,6 @@ class MavlinkManager:
 
         if not self.port_connected:
             self.mav_connection = mavutil.mavlink_connection('udpin:127.0.0.1:14551')
-            # self.mav_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5760')
-            #*******self.mav_connection.target_system = self.sysid
 
 def main():
 
@@ -53,10 +52,10 @@ def main():
 
     ### Connection when the Cube is connected to the computer
     mav_mgr = MavlinkManager()
-    mav_connection = mav_mgr.mav_connection
+    # mav_connection = mav_mgr.mav_connection
 
     ### Connection When there is no MavProxy and you are connecting to the SITL directly (no Mission Planner)
-    # mav_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5760')
+    mav_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5760')
 
     # Create a Flight Control Commander Object
     fc = FltCtlCommander(mav_connection)
@@ -65,15 +64,9 @@ def main():
     mav_connection.wait_heartbeat()
     print("Heartbeat from : " + str(mav_connection.target_system) + " / " + str(mav_connection.target_component))
 
-    mav_connection.mav.commnad_long_send(mav_connection.target_system, mav_connection.target_component, mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 
-                                         0,33,500000,0,0,0,0,0) #33 is GPS message, 500,000 is microseconds (.5 seconds)
-    ackmsg = mav_connection.recv_match(type='COMMAND_ACK', blocking=True)
-    print(ackmsg)
-
     # Start your command sequence
     mode_id = mav_connection.mode_mapping()['GUIDED']
     if fc.send_mode_change_to_flt_ctlr(mode_id):
-        #pass
         if fc.send_arm_disarm_command(1, override=True):
             print(fc.send_takeoff_command())
 
@@ -85,17 +78,19 @@ def main():
     # Send a target to a waypoint in guided mode
     target_string_from_non_python = "{\"lat\": 39.0179776, \"lon\": -104.8936, \"alt\": 2170.0}"
     target_string_from_python = '{"lat": 39.0179776, "lon": -104.8936, "alt": 2170.0}'
-    target_dictionary = {"lat": 39.0188, "lon": -104.8931909, "alt": 2170.0}
-    
-    # pick which form of target you want
-    target = target_dictionary
+    target_dictionary = {"lat": 39.0179776, "lon": -104.8936, "alt": 2170.0}
 
-    fc.send_guided_target_to_flt_ctlr(target)
+    location1 = {"lat": 39.0186999, "lon": -104.8931909, "alt": 2170.0}
+    location2 = {"lat": 39.0179776, "lon": -104.88, "alt": 2180.0}
+    location3 = {"lat": 39.018, "lon": -104.90, "alt": 2190.0}
+    location4 = {"lat": 39.0179776, "lon": -104.8936, "alt": 2170.0}
+    location5 = {"lat": 39.0176, "lon": -104.8945, "alt": 2170.0}
+    location6 = {"lat": 39.0179, "lon": -104.8936, "alt": 2170.0}
+    location_bank=[location1, location2, location3, location4, location5, location6]
 
-    # Run a continuous loop to listen and place commands
-    
     count = 0
-
+    follow_me = False
+    # Run a continuous loop to listen and place commands
     while 1:
         '''
         ***IMPORTANT***
@@ -103,20 +98,10 @@ def main():
         Receive info from Shabri's radar sim. 
         Update target every 2 cycles (for now).
         '''
-
         count += 1
 
-        if count % 25  == 0:
-            # Receive new target
-            newtarget = {"lat": 39.0188, "lon": -104.89313, "alt": 2170.0}
-            if count == 50:
-                newtarget = {"lat": 39.0186999, "lon": -104.893, "alt": 2170.0}
-            if count == 75:
-                newtarget = {"lat": 39.0186999, "lon": -104.8931909, "alt": 2170.0}
-            target = newtarget
-            fc.send_guided_target_to_flt_ctlr(target)
-
-        
+        if count % 50  == 0:
+            fc.send_guided_target_to_flt_ctlr(location_bank[random.randint(0,5)])
 
         # Look at specific messages from the flight controller (Cube)
         # List of possible messages are found here: https://ardupilot.org/dev/docs/mavlink-requesting-data.html
@@ -130,9 +115,18 @@ def main():
         # come in one at a time (i.e. once per while loop cycle) so you can't simultaneously read two messages per cycle
         msg_type = msg.get_type()
         if msg_type == 'GLOBAL_POSITION_INT':
-        # if msg_type == 'POSITION_TARGET_GLOBAL_INT':
             print(msg)
+        '''
+        follow_me = ready_to_follow()
 
+        if follow_me:
+            break
+
+
+    while 1:
+        # Give vector commands to drone. 
+        break
+        '''
 
 # Initialize the code
 if __name__ == "__main__":

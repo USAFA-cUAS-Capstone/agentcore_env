@@ -10,7 +10,7 @@ import struct
 # initialize the ImageHub object
 
 
-HOST='127.0.0.1';
+HOST='';
 PORT=4555;
 jpeg_quality=70
 

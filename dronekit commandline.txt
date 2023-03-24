@@ -27,4 +27,6 @@ C:\"Program Files (x86)\MAVProxy"\mavproxy.exe --master=tcp:127.0.0.1:5760 --mas
 
 C:\"Program Files (x86)\MAVProxy"\mavproxy.exe --master=tcp:127.0.0.1:5760 --out=udp:127.0.0.1:14550 --out=udp:127.0.0.1:14551 --streamrate=-1 --console
 
+C:\"Program Files (x86)\MAVProxy"\mavproxy.exe --master=tcp:127.0.0.1:5760 --master=tcp:127.0.0.1:5770 --out=udp:127.0.0.1:14550 --out=udp:127.0.0.1:14551 --out=udp:127.0.0.1:14552 --out=udp:127.0.3.1:14552 --streamrate=-1 --console
+
 C:\"Program Files (x86)\MAVProxy"\mavproxy.exe --master=tcp:127.0.0.1:5760 --master=tcp:127.0.0.1:5770 --out=udp:127.0.0.1:14550 --out=udp:127.0.0.1:14551

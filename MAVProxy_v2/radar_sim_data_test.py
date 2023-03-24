@@ -1,15 +1,15 @@
 import socket
 
-radar_sim_ip = '192.168.1.102'
+radar_sim_ip = "192.168.1.102"
 radar_sim_port_num = 55565
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 try:
     server_socket.bind((radar_sim_ip, radar_sim_port_num))
-    
+
 except:
     print("Unable to bind to '10.1.10.10' - connecting as localhost")
-    server_socket.bind(('', radar_sim_port_num))
+    server_socket.bind(("", radar_sim_port_num))
 
 while True:
     try:

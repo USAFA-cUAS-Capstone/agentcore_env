@@ -1,4 +1,4 @@
-''' Utility Functions and Methods for the Agent '''
+""" Utility Functions and Methods for the Agent """
 
 from dataclasses import dataclass
 from datetime import datetime
@@ -12,35 +12,37 @@ import zmq
 import pymavlink
 from pymavlink import mavutil
 
+
 @dataclass
 class Position:
-
     lat: float = 0.0
     lon: float = 0.0
     alt: float = 0.0
 
+
 class AgentUtils:
-
     def __init__(self):
-
         self.config = self.get_config_dict()
 
     @classmethod
     def get_config_dict(cls):
-        ''' Gets the config file for this agent '''
+        """Gets the config file for this agent"""
         # Load config yaml file and store it in config dictionary
         here = os.path.dirname(os.path.abspath(__file__))
-        with open(os.path.join(here, 'agent_configuration.yaml'), "r") as f:
+        with open(os.path.join(here, "agent_configuration.yaml"), "r") as f:
             config = yaml.safe_load(f)
         return config
 
     @classmethod
     def return_json(cls, obj):
-        ''' Returns the JSON string of the Agent_Status class variables 
-            This is used to send the agent as a JSON over zmq '''
+        """Returns the JSON string of the Agent_Status class variables
+        This is used to send the agent as a JSON over zmq"""
 
-        final_attribute_list = [a for a in dir(obj) if not a.startswith('__')
-                                            and not callable(getattr(obj, a))]
+        final_attribute_list = [
+            a
+            for a in dir(obj)
+            if not a.startswith("__") and not callable(getattr(obj, a))
+        ]
         final_attribute_dict = dict()
         for attribute in final_attribute_list:
             try:
