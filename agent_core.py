@@ -1,11 +1,8 @@
 import os
 import time
-import numpy as np
 
 os.environ['MAVLINK20'] = '1'
 from pymavlink import mavutil
-# from MAVProxy_v2 import Controller
-from Controller import Controller
 import serial.tools.list_ports
 
 from fltctl_commander_class import FltCtlCommander
@@ -44,6 +41,7 @@ class MavlinkManager:
             self.mav_connection = mavutil.mavlink_connection('udpin:127.0.0.1:14551')
             # self.mav_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5760')
             #*******self.mav_connection.target_system = self.sysid
+        self.mav_connection.target_system = 2
 
 def main():
 
@@ -68,11 +66,13 @@ def main():
     mav_connection.wait_heartbeat()
     print("Heartbeat from : " + str(mav_connection.target_system) + " / " + str(mav_connection.target_component))
 
-    mav_connection.mav.command_long_send(mav_connection.target_system, mav_connection.target_component, mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 
+    '''
+    mav_connection.mav.commnad_long_send(mav_connection.target_system, mav_connection.target_component, mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 
                                          0,33,500000,0,0,0,0,0) #33 is GPS message, 500,000 is microseconds (.5 seconds)
     ackmsg = mav_connection.recv_match(type='COMMAND_ACK', blocking=True)
     print(ackmsg)
-    #print(ack_msg[9])
+    '''
+
     # Start your command sequence
     mode_id = mav_connection.mode_mapping()['GUIDED']
     if fc.send_mode_change_to_flt_ctlr(mode_id):
@@ -107,11 +107,8 @@ def main():
         Update target every 2 cycles (for now).
         '''
 
-        
-
         count += 1
 
-        '''
         if count % 25  == 0:
             # Receive new target
             newtarget = {"lat": 39.0188, "lon": -104.89313, "alt": 2170.0}
@@ -121,86 +118,7 @@ def main():
                 newtarget = {"lat": 39.0186999, "lon": -104.8931909, "alt": 2170.0}
             target = newtarget
             fc.send_guided_target_to_flt_ctlr(target)
-        '''
-        #call controller
-        [phi, rho] = Controller()
-        del_yaw = np.rad2deg(phi)
 
-        '''
-        direction = 1
-        if yaw < 0:
-            yaw = np.abs(yaw)
-            direction = -1
-        '''
-
-        new_heading = msg.hdg + del_yaw*100
-        print(new_heading)
-
-        # speed = del_yaw / 5
-        
-        if (count == 50):
-            msg = mav_connection.mav.command_long_send(
-                mav_connection.target_system,
-                mav_connection.target_component,
-                mavutil.mavlink.MAV_CMD_CONDITION_YAW,
-                0,
-                new_heading,
-                15,
-                0,
-                0, # 0 is absolute heading, 1 is relative
-                0,
-                0,
-                0)
-        
-            #print("here2")
-            ack_msg = mav_connection.recv_match(type = 'COMMAND_ACK', blocking = True)
-            print(ack_msg)
-
-        '''
-        if count > 200:
-            count = 0
-
-        elif count > 150:
-            
-            
-            mav_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(
-                10,
-                mav_connection.target_system,
-                mav_connection.target_component,
-                mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
-                int(0b10011111111),
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 
-                yaw, 
-                0)
-        )
-        elif count > 100:
-            
-            mav_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(
-                10,
-                mav_connection.target_system,
-                mav_connection.target_component,
-                mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
-                int(0b10011111111),
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 
-                yaw/2, 
-                0)
-        )
-        elif count > 50:
-            
-            mav_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(
-                10,
-                mav_connection.target_system,
-                mav_connection.target_component,
-                mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
-                int(0b100111111111),
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 
-                yaw/4, 
-                0)
-        )
-            # message SET_POSITION_TARGET_LOCAL_NED 0 0 0 9 2503 0 0 0 0 0 0 0 0 0 0 yaw 0 # may need to set TARGET to OFFSET, 
-
-
-        '''
         
 
         # Look at specific messages from the flight controller (Cube)
@@ -216,8 +134,7 @@ def main():
         msg_type = msg.get_type()
         if msg_type == 'GLOBAL_POSITION_INT':
         # if msg_type == 'POSITION_TARGET_GLOBAL_INT':
-            print(msg.hdg)
-            
+            print(msg)
 
 
 # Initialize the code

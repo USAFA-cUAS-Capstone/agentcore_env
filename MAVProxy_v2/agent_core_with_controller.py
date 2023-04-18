@@ -1,11 +1,11 @@
 import os
 import time
 import numpy as np
+import cv2 as cv
+from timeit import default_timer as timer
 
 os.environ['MAVLINK20'] = '1'
 from pymavlink import mavutil
-# from MAVProxy_v2 import Controller
-from Controller import Controller
 import serial.tools.list_ports
 
 from fltctl_commander_class import FltCtlCommander
@@ -68,11 +68,11 @@ def main():
     mav_connection.wait_heartbeat()
     print("Heartbeat from : " + str(mav_connection.target_system) + " / " + str(mav_connection.target_component))
 
-    mav_connection.mav.command_long_send(mav_connection.target_system, mav_connection.target_component, mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 
+    mav_connection.mav.commnad_long_send(mav_connection.target_system, mav_connection.target_component, mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 
                                          0,33,500000,0,0,0,0,0) #33 is GPS message, 500,000 is microseconds (.5 seconds)
     ackmsg = mav_connection.recv_match(type='COMMAND_ACK', blocking=True)
     print(ackmsg)
-    #print(ack_msg[9])
+
     # Start your command sequence
     mode_id = mav_connection.mode_mapping()['GUIDED']
     if fc.send_mode_change_to_flt_ctlr(mode_id):
@@ -122,85 +122,13 @@ def main():
             target = newtarget
             fc.send_guided_target_to_flt_ctlr(target)
         '''
-        #call controller
-        [phi, rho] = Controller()
-        del_yaw = np.rad2deg(phi)
-
-        '''
-        direction = 1
-        if yaw < 0:
-            yaw = np.abs(yaw)
-            direction = -1
-        '''
-
-        new_heading = msg.hdg + del_yaw*100
-        print(new_heading)
-
-        # speed = del_yaw / 5
-        
-        if (count == 50):
-            msg = mav_connection.mav.command_long_send(
-                mav_connection.target_system,
-                mav_connection.target_component,
-                mavutil.mavlink.MAV_CMD_CONDITION_YAW,
-                0,
-                new_heading,
-                15,
-                0,
-                0, # 0 is absolute heading, 1 is relative
-                0,
-                0,
-                0)
-        
-            #print("here2")
-            ack_msg = mav_connection.recv_match(type = 'COMMAND_ACK', blocking = True)
-            print(ack_msg)
-
-        '''
-        if count > 200:
-            count = 0
-
-        elif count > 150:
+        if count >= 23:
+            #call controller
+            [phi, rho, z] = Controller()
+            yaw = np.deg2rad(phi)
             
-            
-            mav_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(
-                10,
-                mav_connection.target_system,
-                mav_connection.target_component,
-                mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
-                int(0b10011111111),
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 
-                yaw, 
-                0)
-        )
-        elif count > 100:
-            
-            mav_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(
-                10,
-                mav_connection.target_system,
-                mav_connection.target_component,
-                mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
-                int(0b10011111111),
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 
-                yaw/2, 
-                0)
-        )
-        elif count > 50:
-            
-            mav_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(
-                10,
-                mav_connection.target_system,
-                mav_connection.target_component,
-                mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
-                int(0b100111111111),
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 
-                yaw/4, 
-                0)
-        )
-            # message SET_POSITION_TARGET_LOCAL_NED 0 0 0 9 2503 0 0 0 0 0 0 0 0 0 0 yaw 0 # may need to set TARGET to OFFSET, 
 
 
-        '''
         
 
         # Look at specific messages from the flight controller (Cube)
@@ -216,9 +144,100 @@ def main():
         msg_type = msg.get_type()
         if msg_type == 'GLOBAL_POSITION_INT':
         # if msg_type == 'POSITION_TARGET_GLOBAL_INT':
-            print(msg.hdg)
-            
+            print(msg)
 
+
+
+  
+
+def Controller():
+    threshold = 100
+    i = 0
+    # frameNumber = 0
+    # avgAdder = 0
+
+    while(i < 5):
+        cam = cv.VideoCapture(i)
+        if(cam.isOpened() == True):
+            break
+        i = i+1
+        
+
+    # start = timer()
+    ret, img = cam.read()
+    invert = cv.bitwise_not(img)
+    edgeHeight = img.shape[0]
+    edgeWidth = img.shape[1]
+
+    gray_image = cv.cvtColor(img, cv.COLOR_BGR2GRAY)    #Grayscale
+    blurred = cv.GaussianBlur(gray_image, (7, 7), 0)    #Blur Images
+    # blurred = cv.Canny(gray_image, 50,200)
+    ret,thresh = cv.threshold(blurred, threshold,255,cv.ADAPTIVE_THRESH_MEAN_C)    #Convert to Binary
+    contours,hierarchy = cv.findContours(thresh, 1, 2) #Find Contours
+    cnts = contours[0]
+
+    if(len(contours) > 0):
+        j = 0
+        sorted_contours=sorted(contours, key=cv.contourArea, reverse= True)
+        
+        while(j < len(contours)):
+            largest_item= sorted_contours[j]
+            (bigx, bigy, bigw, bigh) = cv.boundingRect(largest_item)
+            j = j+1
+            
+            if not(bigx == 0 or bigy == 0 or bigw+bigx == edgeWidth or bigh+bigy == edgeHeight):
+                break
+                
+            else:
+                banana = 1
+
+    cv.drawContours(img, largest_item, -1, (255,0,0),10)
+    # cv.drawContours(img, cnts, -1, (0, 255, 0), 2)
+    (x,y),radius = cv.minEnclosingCircle(largest_item)
+    center = (int(x),int(y))
+    radius = int(radius)
+    cv.circle(img,center,radius,(0,0,255),2)
+
+    M = cv.moments(thresh)
+
+    # # calculate x,y coordinate of center
+    cX = int(M["m10"] / M["m00"])
+    cY = int(M["m01"] / M["m00"])
+
+
+    #this might get checked earlier to get rid of edge contours
+    height = int(img.shape[0])
+    heightfor = int(height/2)
+    width = int(img.shape[1]/2)
+
+    #Determine Yaw
+    Yaw = 0
+    Yaw = cX - width
+    Yaw = Yaw*.0359
+
+    #Determine Z
+    Alt = 0
+    Alt = cY - (height/2 + height*.1)
+    Alt = Alt * 1 #Change the constant to fine tune altitude control
+
+    #print(cv.contourArea(contours))
+    cv.line(img, (width,heightfor), center, (255,255,0), 4)
+    cv.putText(img, "centroid", (cX - 25, cY - 25),cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+    cv.putText(img, str(Yaw), (height-10, width-50),cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+    cv.putText(img, str(Alt), (height-10, width-25),cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+
+    # cv.imshow('ret', thresh)
+
+    cv.imshow('this', thresh)
+    cv.imshow('me', img)
+
+    cam.release()
+
+    cv.destroyAllWindows()
+
+    return_array = [Yaw, Alt]
+
+    return return_array
 
 # Initialize the code
 if __name__ == "__main__":
