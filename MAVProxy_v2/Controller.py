@@ -2,15 +2,25 @@ import cv2 as cv
 import numpy as np
 from timeit import default_timer as timer
 
+#This stuff is from imageReceiver
+from datetime import datetime
+import socket
+import argparse
+import imutils
+import sys
+import struct
+# initialize the ImageHub object
+
 #This section is to hard code an image to process before we have a live feed.
 
-ImageFile = "C:\\Users\\cUAS_Laptop1\\Desktop\\ImageProc\\Krusty.jpg"
+# ImageFile = "C:\\Users\\cUAS_Laptop1\\Desktop\\ImageProc\\Krusty.jpg"
+# secondFile = "C:\\Users\\cUAS_Laptop1\\Desktop\\ImageProc\\"
 
 #Turn this to 1 for live processing
 live = 0
 
 
-def Controller():
+def Controller(image, receiver):
     threshold = 100
     i = 0
     # frameNumber = 0
@@ -18,19 +28,34 @@ def Controller():
 
 
     if(live == 1):
-        cam = cv.VideoCapture(i)
-        while(i < 5):    
-            if(cam.isOpened() == True):
-                break
-            i = i+1
-        if(cam.isOpened() == False):
-            print("Could not open camera. Try again dummy.") 
+        msgIn, (address,port) = receiver.recvfrom(65536)
+        MsgHeadr=int("a59f",16) #unique message header
+        metaFormat='<HHdddddHddddhhh'
+        # verify correct message
+        temp=msgIn[0:2]
+        recvHdr=struct.unpack('<H', temp)[0]
+        print(MsgHeadr,recvHdr)
+        if(recvHdr==MsgHeadr):
+            # get metadata size
+            temp=msgIn[2:4]
+            metaLen=struct.unpack('<H',temp)[0]
+            # get metadata
+            temp=msgIn[0:metaLen]
+            metadata=struct.unpack(metaFormat,temp)
+            jpg_buffer=msgIn[metaLen:] #image is rest of message
+            
+            timestamp=metadata[2]
+            azimuth=metadata[6]
+            print(azimuth)
+            frame1=np.asarray(bytearray(jpg_buffer),dtype="uint8")
+            
+            img=cv.imdecode(frame1, cv.IMREAD_COLOR)
             
     # start = timer()
-    if(live == 1):
-        ret, img = cam.read()
-    else:
-        img = cv.imread(ImageFile)
+    # if(live == 1):
+    #     ret, img = cam.read()
+    # else:
+    #     img = image
 
     invert = cv.bitwise_not(img)
     edgeHeight = img.shape[0]
@@ -119,8 +144,8 @@ def Controller():
     # frameNumber = frameNumber + 1
     # avgAdder = avgAdder + (timer()-start)
 
-    if(live == 1):
-        cam.release()
+    # if(live == 1):
+    #     cam.release()
 
     cv.destroyAllWindows()
 
