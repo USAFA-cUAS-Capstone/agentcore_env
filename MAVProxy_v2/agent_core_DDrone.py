@@ -2,7 +2,7 @@ import os
 import time
 import random
 import socket, sys, queue, cv2, datetime, pytz, imutils, struct
-from threading import Thread, event
+from threading import Thread, Event
 import numpy as np
 
 os.environ['MAVLINK20'] = '1'
